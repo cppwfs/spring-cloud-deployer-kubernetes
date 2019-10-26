@@ -17,7 +17,6 @@
 package org.springframework.cloud.deployer.spi.scheduler.kubernetes;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +46,7 @@ import org.springframework.util.StringUtils;
  * Kubernetes implementation of the {@link Scheduler} SPI.
  *
  * @author Chris Schaefer
+ * @author Glenn Renfro
  */
 public class KubernetesScheduler implements Scheduler {
 	private static final String SPRING_CRONJOB_ID_KEY = "spring-cronjob-id";
@@ -122,6 +122,9 @@ public class KubernetesScheduler implements Scheduler {
 		for (CronJob cronJob : cronJobs) {
 			Map<String, String> properties = new HashMap<>();
 			properties.put(SchedulerPropertyKeys.CRON_EXPRESSION, cronJob.getSpec().getSchedule());
+			if(cronJob.getMetadata().getLabels().containsKey(SCHEDULER_ALTERNATE_TASK_NAME)) {
+				properties.put(SCHEDULER_ALTERNATE_TASK_NAME, cronJob.getMetadata().getLabels().get(SCHEDULER_ALTERNATE_TASK_NAME));
+			}
 
 			ScheduleInfo scheduleInfo = new ScheduleInfo();
 			scheduleInfo.setScheduleName(cronJob.getMetadata().getName());
@@ -135,8 +138,12 @@ public class KubernetesScheduler implements Scheduler {
 	}
 
 	protected CronJob createCronJob(ScheduleRequest scheduleRequest) {
-		Map<String, String> labels = Collections.singletonMap(SPRING_CRONJOB_ID_KEY,
+		Map<String, String> labels = new HashMap<>();
+		labels.put(SPRING_CRONJOB_ID_KEY,
 				scheduleRequest.getDefinition().getName());
+		if (scheduleRequest.getSchedulerProperties().containsKey(SCHEDULER_ALTERNATE_TASK_NAME)) {
+			labels.put(SCHEDULER_ALTERNATE_TASK_NAME, scheduleRequest.getSchedulerProperties().get(SCHEDULER_ALTERNATE_TASK_NAME));
+		}
 
 		String schedule = scheduleRequest.getSchedulerProperties().get(SchedulerPropertyKeys.CRON_EXPRESSION);
 		Assert.hasText(schedule, "The property: " + SchedulerPropertyKeys.CRON_EXPRESSION + " must be defined");
