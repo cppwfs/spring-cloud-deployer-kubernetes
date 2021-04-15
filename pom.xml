@@ -38,6 +38,12 @@
 				<artifactId>kubernetes-model</artifactId>
 				<version>${kubernetes-client.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>io.fabric8</groupId>
+				<artifactId>kubernetes-model-certificates</artifactId>
+				<version>${kubernetes-client.version}</version>
+			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 
@@ -59,6 +65,10 @@
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>kubernetes-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.fabric8</groupId>
+			<artifactId>kubernetes-model-certificates</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.hashids</groupId>
