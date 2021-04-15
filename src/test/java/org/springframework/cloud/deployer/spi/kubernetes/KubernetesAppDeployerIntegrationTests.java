@@ -138,6 +138,7 @@ public class KubernetesAppDeployerIntegrationTests extends AbstractAppDeployerIn
 
 	@Before
 	public void setup() {
+		kubernetesClient = KubernetesClientFactory.getKubernetesClient(originalProperties);
 		if (kubernetesClient.getNamespace() == null) {
 			kubernetesClient.getConfiguration().setNamespace("default");
 		}
@@ -446,6 +447,7 @@ public class KubernetesAppDeployerIntegrationTests extends AbstractAppDeployerIn
 			int tries = 0;
 			int maxWait = properties.getMinutesToWaitForLoadBalancer() * 6; // we check 6 times per minute
 			while (tries++ < maxWait && !success) {
+				System.out.println("TRY TRY ********* TRY AGAIN + " + tries);
 				if (svc.getStatus() != null && svc.getStatus().getLoadBalancer() != null &&
 						svc.getStatus().getLoadBalancer().getIngress() != null &&
 						!(svc.getStatus().getLoadBalancer().getIngress().isEmpty())) {
@@ -494,6 +496,7 @@ public class KubernetesAppDeployerIntegrationTests extends AbstractAppDeployerIn
 
 		String url = String.format("http://%s:%d/actuator/env", ip, port);
 		log.debug("getting app environment from " + url);
+
 		restTemplate = new RestTemplate();
 
 		ResponseEntity<LinkedHashMap<String, ArrayList<LinkedHashMap>>> response = restTemplate.exchange(url,
