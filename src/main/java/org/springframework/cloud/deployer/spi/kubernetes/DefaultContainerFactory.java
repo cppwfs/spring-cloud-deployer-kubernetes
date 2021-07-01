@@ -280,7 +280,7 @@ public class DefaultContainerFactory implements ContainerFactory {
 		// add properties from deployment request
 		Map<String, String> args = request.getDefinition().getProperties();
 		for (Map.Entry<String, String> entry : args.entrySet()) {
-			if (StringUtils.isEmpty(entry.getValue())) {
+			if (!StringUtils.hasText(entry.getValue())) {
 				logger.warn(
 						"Excluding request property with missing value from command args: " + entry.getKey());
 			}
@@ -308,7 +308,6 @@ public class DefaultContainerFactory implements ContainerFactory {
 	}
 
 	private Map<String, String> getDeploymentProperties(AppDeploymentRequest request) {
-		return (request instanceof ScheduleRequest) ? ((ScheduleRequest)request).getSchedulerProperties() :
-				request.getDeploymentProperties();
+		return request.getDeploymentProperties();
 	}
 }

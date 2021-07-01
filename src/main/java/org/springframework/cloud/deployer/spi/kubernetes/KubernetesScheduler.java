@@ -67,10 +67,8 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 
 	@Override
 	public void schedule(ScheduleRequest scheduleRequest) {
-		scheduleRequest.setSchedulerProperties(mergeSchedulerProperties(scheduleRequest));
-		if(scheduleRequest != null) {
-			validateScheduleName(scheduleRequest);
-		}
+
+		validateScheduleName(scheduleRequest);
 		try {
 			createCronJob(scheduleRequest);
 		}
@@ -94,7 +92,9 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 	static Map<String, String> mergeSchedulerProperties(ScheduleRequest scheduleRequest) {
 		Map<String, String> deploymentProperties = scheduleRequest.getDeploymentProperties();
 		Map<String, String> schedulerProperties = new HashMap<>();
-		schedulerProperties.putAll(scheduleRequest.getSchedulerProperties());
+		if(scheduleRequest.getSchedulerProperties() != null) {
+			schedulerProperties.putAll(scheduleRequest.getSchedulerProperties());
+		}
 		if (deploymentProperties != null) {
 			for (Map.Entry<String, String> deploymentProperty : deploymentProperties.entrySet()) {
 				String deploymentPropertyKey = deploymentProperty.getKey();
@@ -103,6 +103,11 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 							deploymentPropertyKey.substring(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX.length());
 					if (!schedulerProperties.containsKey(schedulerPropertyKey)) {
 						schedulerProperties.put(schedulerPropertyKey, deploymentProperty.getValue());
+					}
+				}
+				else if(StringUtils.hasText(deploymentPropertyKey) && deploymentPropertyKey.startsWith(SchedulerPropertyKeys.PREFIX)) {
+					if (!schedulerProperties.containsKey(deploymentPropertyKey)) {
+						schedulerProperties.put(deploymentPropertyKey, deploymentProperty.getValue());
 					}
 				}
 			}
@@ -169,17 +174,17 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 		Map<String, String> labels = new HashMap<>();
 		labels.put(SPRING_CRONJOB_ID_KEY, scheduleRequest.getDefinition().getName());
 
-		Map<String, String> schedulerProperties = scheduleRequest.getSchedulerProperties();
-		String schedule = schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION);
+		Map<String, String> schedulerProperties = mergeSchedulerProperties(scheduleRequest);
+		String schedule = (schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION));
 		Assert.hasText(schedule, "The property: " + SchedulerPropertyKeys.CRON_EXPRESSION + " must be defined");
 
 		PodSpec podSpec = createPodSpec(scheduleRequest);
-		String taskServiceAccountName = this.deploymentPropertiesResolver.getTaskServiceAccountName(scheduleRequest.getSchedulerProperties());
+		String taskServiceAccountName = this.deploymentPropertiesResolver.getTaskServiceAccountName(schedulerProperties);
 		if (StringUtils.hasText(taskServiceAccountName)) {
 			podSpec.setServiceAccountName(taskServiceAccountName);
 		}
-		Map<String, String> annotations = this.deploymentPropertiesResolver.getPodAnnotations(scheduleRequest.getSchedulerProperties());
-		labels.putAll(this.deploymentPropertiesResolver.getDeploymentLabels(scheduleRequest.getSchedulerProperties()));
+		Map<String, String> annotations = this.deploymentPropertiesResolver.getPodAnnotations(schedulerProperties);
+		labels.putAll(this.deploymentPropertiesResolver.getDeploymentLabels(schedulerProperties));
 
 		CronJob cronJob = new CronJobBuilder().withNewMetadata().withName(scheduleRequest.getScheduleName())
 				.withLabels(labels).withAnnotations(this.deploymentPropertiesResolver.getJobAnnotations(schedulerProperties)).endMetadata()
@@ -213,7 +218,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 
 	private void setImagePullSecret(ScheduleRequest scheduleRequest, CronJob cronJob) {
 
-		String imagePullSecret = this.deploymentPropertiesResolver.getImagePullSecret(scheduleRequest.getSchedulerProperties());
+		String imagePullSecret = this.deploymentPropertiesResolver.getImagePullSecret(scheduleRequest.getDeploymentProperties());
 
 		if (StringUtils.hasText(imagePullSecret)) {
 			LocalObjectReference localObjectReference = new LocalObjectReference();

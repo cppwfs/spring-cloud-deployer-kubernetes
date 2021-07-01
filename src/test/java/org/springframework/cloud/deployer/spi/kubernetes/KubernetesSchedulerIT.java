@@ -47,6 +47,8 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -108,7 +110,7 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 
 	@Override
 	protected Map<String, String> getDeploymentProperties() {
-		return null;
+		return Collections.singletonMap(SchedulerPropertyKeys.CRON_EXPRESSION, "57 13 ? * *");
 	}
 
 	@Override
@@ -143,20 +145,26 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 		super.testListFilter();
 	}
 
-	@Test
-	public void testMissingSchedule() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testMissingSchedule(boolean isDeprecated) {
 		AppDefinition appDefinition = new AppDefinition(randomName(), null);
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, null, null, null, null, testApplication());
+		ScheduleRequest scheduleRequest = (isDeprecated)?
+				new ScheduleRequest(appDefinition, null, null, null, null, testApplication()) :
+				new ScheduleRequest(appDefinition, null, (List<String>) null, null, testApplication());
 
 		assertThatThrownBy(() -> {
 			scheduler.schedule(scheduleRequest);
 		}).isInstanceOf(CreateScheduleException.class);
 	}
 
-	@Test
-	public void testInvalidNameSchedule() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testInvalidNameSchedule(boolean isDeprecated) {
 		AppDefinition appDefinition = new AppDefinition("AAAAAA", null);
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, null, null, null, "AAAAA", testApplication());
+		ScheduleRequest scheduleRequest = (isDeprecated) ?
+				new ScheduleRequest(appDefinition, null, null, null, "AAAAA", testApplication()) :
+				new ScheduleRequest(appDefinition, null,(List<String>) null, "AAAAA", testApplication());
 
 		assertThatThrownBy(() -> {
 			scheduler.schedule(scheduleRequest);
@@ -234,41 +242,45 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 		assertThat(scheduleInfos.get(0).getScheduleName().equals("job1"));
 	}
 
-	@Test
-	public void testInvalidCronSyntax() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testInvalidCronSyntax(boolean isDeprecated) {
 		Map<String, String> schedulerProperties = Collections.singletonMap(SchedulerPropertyKeys.CRON_EXPRESSION, "1 2 3 4");
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), null);
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, schedulerProperties, null, null,
-				randomName(), testApplication());
+		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, schedulerProperties, null, null, randomName(), testApplication()) :
+				new ScheduleRequest(appDefinition, schedulerProperties, (List<String>) null, randomName(), testApplication());
 
 		assertThatThrownBy(() -> {
 			scheduler.schedule(scheduleRequest);
 		}).isInstanceOf(CreateScheduleException.class);
 	}
 
-	@Test
-	public void testNameTooLong() {
-		final String baseScheduleName = "tencharlng-scdf-itcouldbesaidthatthisislongtoowaytoo";
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testNameTooLong(boolean isDeprecated) {
+		final String baseScheduleName = (isDeprecated) ? "tencharlng-scdf-itcouldbesaidthatthisislongtoowayold" :
+				"tencharlng-scdf-itcouldbesaidthatthisislongtoowaytoo";
 		Map<String, String> schedulerProperties = Collections.singletonMap(SchedulerPropertyKeys.CRON_EXPRESSION, "0/10 * * * *");
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), null);
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, schedulerProperties, null, null,
-				baseScheduleName, testApplication());
+		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, schedulerProperties, null, null, baseScheduleName, testApplication()) :
+				new ScheduleRequest(appDefinition, schedulerProperties, (List<String>) null, baseScheduleName, testApplication());
 
 		//verify no validation fired.
 		scheduler.schedule(scheduleRequest);
 
-		ScheduleRequest scheduleRequest2 = new ScheduleRequest(appDefinition, schedulerProperties, null, null,
-				baseScheduleName + "1", testApplication());
+		ScheduleRequest scheduleRequest2 = (isDeprecated) ? new ScheduleRequest(appDefinition, schedulerProperties, null, null, baseScheduleName + "1", testApplication()) :
+				new ScheduleRequest(appDefinition, schedulerProperties, (List<String>) null, baseScheduleName + "1", testApplication());
 		assertThatThrownBy(() -> {
 			scheduler.schedule(scheduleRequest2);
 		}).isInstanceOf(CreateScheduleException.class)
 			.hasMessage(String.format("Failed to create schedule because Schedule Name: '%s' has too many characters.  Schedule name length must be 52 characters or less", baseScheduleName + "1"));
 	}
 
-	@Test
-	public void testWithExecEntryPoint() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testWithExecEntryPoint(boolean isDeprecated) {
 		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
 		if (kubernetesSchedulerProperties.getNamespace() == null) {
 			kubernetesSchedulerProperties.setNamespace("default");
@@ -282,8 +294,8 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 				kubernetesSchedulerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, getSchedulerProperties(), null,
-				getCommandLineArgs(), randomName(), testApplication());
+		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
+				new ScheduleRequest(appDefinition, getSchedulerProperties(), getCommandLineArgs(), randomName(), testApplication());
 
 		CronJob cronJob = kubernetesScheduler.createCronJob(scheduleRequest);
 		CronJobSpec cronJobSpec = cronJob.getSpec();
@@ -297,8 +309,9 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 		kubernetesScheduler.unschedule(cronJob.getMetadata().getName());
 	}
 
-	@Test
-	public void testWithShellEntryPoint() {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testWithShellEntryPoint(boolean deprecated) {
 		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
 		if (kubernetesSchedulerProperties.getNamespace() == null) {
 			kubernetesSchedulerProperties.setNamespace("default");
@@ -312,9 +325,8 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 				kubernetesSchedulerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, getSchedulerProperties(), null,
-				getCommandLineArgs(), randomName(), testApplication());
-
+		ScheduleRequest scheduleRequest = (deprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
+				new ScheduleRequest(appDefinition, getSchedulerProperties(), getCommandLineArgs(), randomName(), testApplication());
 		CronJob cronJob = kubernetesScheduler.createCronJob(scheduleRequest);
 		CronJobSpec cronJobSpec = cronJob.getSpec();
 
@@ -329,8 +341,9 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 		kubernetesScheduler.unschedule(cronJob.getMetadata().getName());
 	}
 
-	@Test
-	public void testWithBootEntryPoint() throws IOException {
+	@ParameterizedTest
+	@ValueSource(booleans = {true, false})
+	public void testWithBootEntryPoint(boolean deprecated) throws IOException {
 		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
 		kubernetesSchedulerProperties.setEntryPointStyle(EntryPointStyle.boot);
 		if (kubernetesSchedulerProperties.getNamespace() == null) {
@@ -343,9 +356,8 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 				kubernetesSchedulerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
-		ScheduleRequest scheduleRequest = new ScheduleRequest(appDefinition, getSchedulerProperties(), null,
-				getCommandLineArgs(), randomName(), testApplication());
-
+		ScheduleRequest scheduleRequest = (deprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
+				new ScheduleRequest(appDefinition, getSchedulerProperties(), getCommandLineArgs(), randomName(), testApplication());
 		CronJob cronJob = kubernetesScheduler.createCronJob(scheduleRequest);
 		CronJobSpec cronJobSpec = cronJob.getSpec();
 
