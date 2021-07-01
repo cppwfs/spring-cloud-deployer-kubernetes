@@ -92,6 +92,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 	static Map<String, String> mergeSchedulerProperties(ScheduleRequest scheduleRequest) {
 		Map<String, String> deploymentProperties = scheduleRequest.getDeploymentProperties();
 		Map<String, String> schedulerProperties = new HashMap<>();
+		System.out.println("************YOU ARE MERGING***********");
 		if(scheduleRequest.getSchedulerProperties() != null) {
 			schedulerProperties.putAll(scheduleRequest.getSchedulerProperties());
 		}
@@ -175,10 +176,11 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 		labels.put(SPRING_CRONJOB_ID_KEY, scheduleRequest.getDefinition().getName());
 
 		Map<String, String> schedulerProperties = mergeSchedulerProperties(scheduleRequest);
+
 		String schedule = (schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION));
 		Assert.hasText(schedule, "The property: " + SchedulerPropertyKeys.CRON_EXPRESSION + " must be defined");
 
-		PodSpec podSpec = createPodSpec(scheduleRequest);
+		PodSpec podSpec = createPodSpec(new ScheduleRequest(scheduleRequest.getDefinition(),schedulerProperties, scheduleRequest.getCommandlineArguments(), scheduleRequest.getScheduleName(),scheduleRequest.getResource()));
 		String taskServiceAccountName = this.deploymentPropertiesResolver.getTaskServiceAccountName(schedulerProperties);
 		if (StringUtils.hasText(taskServiceAccountName)) {
 			podSpec.setServiceAccountName(taskServiceAccountName);
