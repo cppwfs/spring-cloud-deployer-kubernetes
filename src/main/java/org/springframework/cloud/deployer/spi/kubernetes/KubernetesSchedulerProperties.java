@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @author Chris Schaefer
  */
+@Deprecated
 @ConfigurationProperties(prefix = KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX)
 public class KubernetesSchedulerProperties extends KubernetesDeployerProperties {
 	/**

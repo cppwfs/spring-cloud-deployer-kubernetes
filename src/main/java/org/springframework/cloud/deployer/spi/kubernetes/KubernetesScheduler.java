@@ -99,6 +99,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 		if (deploymentProperties != null) {
 			for (Map.Entry<String, String> deploymentProperty : deploymentProperties.entrySet()) {
 				String deploymentPropertyKey = deploymentProperty.getKey();
+				System.out.println("%%%% " + deploymentPropertyKey + "==>" + deploymentProperties.get(deploymentPropertyKey));
 				if (StringUtils.hasText(deploymentPropertyKey) && deploymentPropertyKey.startsWith(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX)) {
 					String schedulerPropertyKey = KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX +
 							deploymentPropertyKey.substring(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX.length());
@@ -113,6 +114,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 				}
 			}
 		}
+		schedulerProperties.entrySet().stream().forEach(sp -> System.out.println("&&&& " + sp.getKey() + "==>" + sp.getValue()));
 		return schedulerProperties;
 	}
 
@@ -177,7 +179,9 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 
 		Map<String, String> schedulerProperties = mergeSchedulerProperties(scheduleRequest);
 
-		String schedule = (schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION));
+		String schedule = schedulerProperties.get("spring.cloud.scheduler.kubernetes.cron.expression") != null ?
+				schedulerProperties.get("spring.cloud.scheduler.kubernetes.cron.expression") :
+				schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION);
 		Assert.hasText(schedule, "The property: " + SchedulerPropertyKeys.CRON_EXPRESSION + " must be defined");
 
 		PodSpec podSpec = createPodSpec(new ScheduleRequest(scheduleRequest.getDefinition(),schedulerProperties, scheduleRequest.getCommandlineArguments(), scheduleRequest.getScheduleName(),scheduleRequest.getResource()));

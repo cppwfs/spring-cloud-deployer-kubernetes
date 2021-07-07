@@ -279,7 +279,7 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	}
 
 	@ParameterizedTest
-	@ValueSource(booleans = {true, false})
+	@ValueSource(booleans = {false})
 	public void testWithExecEntryPoint(boolean isDeprecated) {
 		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
 		if (kubernetesSchedulerProperties.getNamespace() == null) {
@@ -295,7 +295,7 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
 		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
-				new ScheduleRequest(appDefinition, getSchedulerProperties(), getCommandLineArgs(), randomName(), testApplication());
+				new ScheduleRequest(appDefinition, getDeploymentProperties(), getCommandLineArgs(), randomName(), testApplication());
 
 		CronJob cronJob = kubernetesScheduler.createCronJob(scheduleRequest);
 		CronJobSpec cronJobSpec = cronJob.getSpec();

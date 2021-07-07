@@ -302,7 +302,9 @@ public class DefaultContainerFactory implements ContainerFactory {
 
 
 	private DeploymentPropertiesResolver getDeploymentPropertiesResolver(AppDeploymentRequest request) {
-		String propertiesPrefix = (request instanceof ScheduleRequest) ? KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX :
+		String propertiesPrefix = (request instanceof ScheduleRequest &&
+				((ScheduleRequest) request).getSchedulerProperties() != null &&
+				((ScheduleRequest) request).getSchedulerProperties().size() > 0 ) ? KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX :
 				KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX;
 		return new DeploymentPropertiesResolver(propertiesPrefix, this.properties);
 	}
