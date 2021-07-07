@@ -92,35 +92,52 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 	 * @return the merged schedule properties
 	 */
 	static Map<String, String> mergeSchedulerProperties(ScheduleRequest scheduleRequest) {
-		Map<String, String> deploymentProperties = scheduleRequest.getDeploymentProperties();
-		Map<String, String> schedulerProperties = new HashMap<>();
+		Map<String, String> deploymentProperties = new HashMap<>();
+		Map<String, String> schedulerProperties = scheduleRequest.getSchedulerProperties();
 		System.out.println("************YOU ARE MERGING***********");
-		if(scheduleRequest.getSchedulerProperties() != null) {
-			schedulerProperties.putAll(scheduleRequest.getSchedulerProperties());
+		if(scheduleRequest.getDeploymentProperties() != null) {
+			deploymentProperties.putAll(scheduleRequest.getDeploymentProperties());
 		}
-		if (deploymentProperties != null) {
-			for (Map.Entry<String, String> deploymentProperty : deploymentProperties.entrySet()) {
-				String deploymentPropertyKey = deploymentProperty.getKey();
-				System.out.println("%%%% " + deploymentPropertyKey + "==>" + deploymentProperties.get(deploymentPropertyKey));
-				if (StringUtils.hasText(deploymentPropertyKey) && deploymentPropertyKey.startsWith(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX)) {
-					String schedulerPropertyKey = KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX +
-							deploymentPropertyKey.substring(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX.length());
-					if (!schedulerProperties.containsKey(schedulerPropertyKey)) {
-						schedulerProperties.put(schedulerPropertyKey, deploymentProperty.getValue());
-					}
+		if (schedulerProperties != null) {
+			for (Map.Entry<String, String> schedulerProperty : schedulerProperties.entrySet()) {
+				String schedulerPropertyKey = schedulerProperty.getKey();
+				System.out.println("%%%% " + schedulerPropertyKey + "==>" + schedulerProperties.get(schedulerPropertyKey));
+				if (StringUtils.hasText(schedulerPropertyKey) && schedulerPropertyKey.startsWith(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX)) {
+					String deployerPropertyKey = KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX +
+							schedulerPropertyKey.substring(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX.length());
+//					if (!deploymentProperties.containsKey(deployerPropertyKey)) {
+						deploymentProperties.put(deployerPropertyKey, schedulerProperty.getValue());
+//					}
 				}
-				else if(StringUtils.hasText(deploymentPropertyKey) && deploymentPropertyKey.startsWith(SchedulerPropertyKeys.PREFIX)) {
-					if (!schedulerProperties.containsKey(deploymentPropertyKey)) {
-						schedulerProperties.put(deploymentPropertyKey, deploymentProperty.getValue());
+				else if(StringUtils.hasText(schedulerPropertyKey) && schedulerPropertyKey.startsWith(SchedulerPropertyKeys.PREFIX)) {
+					if (!deploymentProperties.containsKey(schedulerPropertyKey)) {
+						deploymentProperties.put(schedulerPropertyKey, schedulerProperty.getValue());
 					}
 				}
 			}
 		}
-		if(!schedulerProperties.containsKey(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy")) {
-			schedulerProperties.put(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy", RestartPolicy.Never.name());
+		if(!deploymentProperties.containsKey(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy")) {
+			deploymentProperties.put(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy", RestartPolicy.Never.name());
 		}
-		schedulerProperties.entrySet().stream().forEach(sp -> System.out.println("&&&& " + sp.getKey() + "==>" + sp.getValue()));
-		return schedulerProperties;
+		Map<String, String> updatedDeploymentProperties = new HashMap<>();
+		Map<String, String> updatedSchedulerProperties = new HashMap<>();
+		for (Map.Entry<String, String> schedulerProperty : deploymentProperties.entrySet()) {
+			String schedulerPropertyKey = schedulerProperty.getKey();
+			System.out.println(">>>>>>>" + schedulerPropertyKey + "==>" + deploymentProperties.get(schedulerPropertyKey));
+			if (StringUtils.hasText(schedulerPropertyKey) && schedulerPropertyKey.startsWith(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX)) {
+				String deployerPropertyKey = KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX +
+						schedulerPropertyKey.substring(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX.length());
+				updatedSchedulerProperties.put(deployerPropertyKey, schedulerProperty.getValue());
+			}
+			else {
+				updatedDeploymentProperties.put(schedulerProperty.getKey(), schedulerProperty.getValue());
+			}
+		}
+		deploymentProperties.clear();
+		deploymentProperties.putAll(updatedDeploymentProperties);
+		deploymentProperties.putAll(updatedSchedulerProperties);
+		deploymentProperties.entrySet().stream().forEach(sp -> System.out.println("&&&& " + sp.getKey() + "==>" + sp.getValue()));
+		return deploymentProperties;
 	}
 
 	public void validateScheduleName(ScheduleRequest request) {
@@ -191,6 +208,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 
 		PodSpec podSpec = createPodSpec(new ScheduleRequest(scheduleRequest.getDefinition(),schedulerProperties, scheduleRequest.getCommandlineArguments(), scheduleRequest.getScheduleName(),scheduleRequest.getResource()));
 		String taskServiceAccountName = this.deploymentPropertiesResolver.getTaskServiceAccountName(schedulerProperties);
+		taskServiceAccountName = taskServiceAccountName != null ? taskServiceAccountName : KubernetesDeployerProperties.DEFAULT_TASK_SERVICE_ACCOUNT_NAME;
 		if (StringUtils.hasText(taskServiceAccountName)) {
 			podSpec.setServiceAccountName(taskServiceAccountName);
 		}
