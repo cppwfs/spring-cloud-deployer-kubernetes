@@ -254,10 +254,10 @@ public class AbstractKubernetesDeployer {
 
 		podSpec.withRestartPolicy(this.deploymentPropertiesResolver.getRestartPolicy(deploymentProperties).name());
 
-		String deploymentServiceAcccountName = this.deploymentPropertiesResolver.getDeploymentServiceAccountName(deploymentProperties);
+		String deploymentServiceAccountName = this.deploymentPropertiesResolver.getDeploymentServiceAccountName(deploymentProperties);
 
-		if (deploymentServiceAcccountName != null) {
-			podSpec.withServiceAccountName(deploymentServiceAcccountName);
+		if (deploymentServiceAccountName != null) {
+			podSpec.withServiceAccountName(deploymentServiceAccountName);
 		}
 
 		PodSecurityContext podSecurityContext = this.deploymentPropertiesResolver.getPodSecurityContext(deploymentProperties);

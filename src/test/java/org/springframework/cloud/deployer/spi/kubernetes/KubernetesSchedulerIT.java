@@ -279,19 +279,21 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	}
 
 	@ParameterizedTest
-	@ValueSource(booleans = {false})
+	@ValueSource(booleans = {true, false})
 	public void testWithExecEntryPoint(boolean isDeprecated) {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties =
+				(isDeprecated) ? new KubernetesSchedulerProperties() :
+				new KubernetesDeployerProperties();
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
-		kubernetesSchedulerProperties.setEntryPointStyle(EntryPointStyle.exec);
+		kubernetesDeployerProperties.setEntryPointStyle(EntryPointStyle.exec);
 
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
 		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
@@ -311,21 +313,23 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
-	public void testWithShellEntryPoint(boolean deprecated) {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+	public void testWithShellEntryPoint(boolean isDeprecated) {
+		KubernetesDeployerProperties kubernetesDeployerProperties =
+				(isDeprecated) ? new KubernetesSchedulerProperties() :
+						new KubernetesDeployerProperties();
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
-		kubernetesSchedulerProperties.setEntryPointStyle(EntryPointStyle.shell);
+		kubernetesDeployerProperties.setEntryPointStyle(EntryPointStyle.shell);
 
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
-		ScheduleRequest scheduleRequest = (deprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
+		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
 				new ScheduleRequest(appDefinition, getSchedulerProperties(), getCommandLineArgs(), randomName(), testApplication());
 		CronJob cronJob = kubernetesScheduler.createCronJob(scheduleRequest);
 		CronJobSpec cronJobSpec = cronJob.getSpec();
@@ -344,16 +348,16 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	public void testWithBootEntryPoint(boolean deprecated) throws IOException {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		kubernetesSchedulerProperties.setEntryPointStyle(EntryPointStyle.boot);
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties = new KubernetesDeployerProperties();
+		kubernetesDeployerProperties.setEntryPointStyle(EntryPointStyle.boot);
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
 		ScheduleRequest scheduleRequest = (deprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()):
@@ -421,17 +425,17 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	public void testEntryPointStyleOverride(boolean isDeprecated) throws Exception {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties = new KubernetesDeployerProperties();
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
-		String prefix = KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX;
+		String prefix = KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX;
 
 		Map<String, String> schedulerProperties = new HashMap<>(getSchedulerProperties());
 		schedulerProperties.put(prefix + ".entryPointStyle", "boot");
@@ -462,15 +466,15 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	public void testEntryPointStyleDefault(boolean isDeprecated) {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties = new KubernetesDeployerProperties();
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
 		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), Collections.emptyMap(), getCommandLineArgs(), randomName(), testApplication()) :
@@ -490,17 +494,17 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	public void testImagePullPolicyOverride(boolean isDeprecated) {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties = new KubernetesDeployerProperties();
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
-		String prefix = KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX;
+		String prefix = KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX;
 
 		Map<String, String> schedulerProperties = new HashMap<>(getSchedulerProperties());
 		schedulerProperties.put(prefix + ".imagePullPolicy", "Always");
@@ -522,18 +526,18 @@ public class KubernetesSchedulerIT extends AbstractSchedulerIntegrationJUnit5Tes
 	@ParameterizedTest
 	@ValueSource(booleans = {true, false})
 	public void testJobAnnotationsAndLabelsFromSchedulerProperties(boolean isDeprecated) {
-		KubernetesSchedulerProperties kubernetesSchedulerProperties = new KubernetesSchedulerProperties();
-		kubernetesSchedulerProperties.setJobAnnotations("test1:value1");
-		kubernetesSchedulerProperties.setPodAnnotations("podtest1:podvalue1");
-		kubernetesSchedulerProperties.setDeploymentLabels("label1:value1,label2:value2");
-		if (kubernetesSchedulerProperties.getNamespace() == null) {
-			kubernetesSchedulerProperties.setNamespace("default");
+		KubernetesDeployerProperties kubernetesDeployerProperties = new KubernetesDeployerProperties();
+		kubernetesDeployerProperties.setJobAnnotations("test1:value1");
+		kubernetesDeployerProperties.setPodAnnotations("podtest1:podvalue1");
+		kubernetesDeployerProperties.setDeploymentLabels("label1:value1,label2:value2");
+		if (kubernetesDeployerProperties.getNamespace() == null) {
+			kubernetesDeployerProperties.setNamespace("default");
 		}
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient()
-				.inNamespace(kubernetesSchedulerProperties.getNamespace());
+				.inNamespace(kubernetesDeployerProperties.getNamespace());
 
 		KubernetesScheduler kubernetesScheduler = new KubernetesScheduler(kubernetesClient,
-				kubernetesSchedulerProperties);
+				kubernetesDeployerProperties);
 
 		AppDefinition appDefinition = new AppDefinition(randomName(), getAppProperties());
 		ScheduleRequest scheduleRequest = (isDeprecated) ? new ScheduleRequest(appDefinition, getSchedulerProperties(), null, getCommandLineArgs(), randomName(), testApplication()) :

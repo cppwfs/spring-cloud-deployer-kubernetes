@@ -54,7 +54,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 	private static final String SCHEDULE_EXPRESSION_FIELD_NAME = "spec.schedule";
 
 	public KubernetesScheduler(KubernetesClient client,
-			KubernetesSchedulerProperties properties) {
+			KubernetesDeployerProperties properties) {
 		Assert.notNull(client, "KubernetesClient must not be null");
 		Assert.notNull(properties, "KubernetesSchedulerProperties must not be null");
 
@@ -62,7 +62,9 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 		this.properties = properties;
 		this.containerFactory = new DefaultContainerFactory(properties);
 		this.deploymentPropertiesResolver = new DeploymentPropertiesResolver(
-				KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX, properties);
+				(properties instanceof KubernetesSchedulerProperties) ?
+				KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX:
+				KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX, properties);
 	}
 
 	@Override
@@ -113,6 +115,9 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 					}
 				}
 			}
+		}
+		if(!schedulerProperties.containsKey(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy")) {
+			schedulerProperties.put(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy", RestartPolicy.Never.name());
 		}
 		schedulerProperties.entrySet().stream().forEach(sp -> System.out.println("&&&& " + sp.getKey() + "==>" + sp.getValue()));
 		return schedulerProperties;
