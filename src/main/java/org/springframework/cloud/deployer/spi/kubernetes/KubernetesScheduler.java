@@ -105,9 +105,7 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 				if (StringUtils.hasText(schedulerPropertyKey) && schedulerPropertyKey.startsWith(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX)) {
 					String deployerPropertyKey = KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX +
 							schedulerPropertyKey.substring(KubernetesSchedulerProperties.KUBERNETES_SCHEDULER_PROPERTIES_PREFIX.length());
-//					if (!deploymentProperties.containsKey(deployerPropertyKey)) {
-						deploymentProperties.put(deployerPropertyKey, schedulerProperty.getValue());
-//					}
+					deploymentProperties.put(deployerPropertyKey, schedulerProperty.getValue());
 				}
 				else if(StringUtils.hasText(schedulerPropertyKey) && schedulerPropertyKey.startsWith(SchedulerPropertyKeys.PREFIX)) {
 					if (!deploymentProperties.containsKey(schedulerPropertyKey)) {
@@ -118,6 +116,9 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 		}
 		if(!deploymentProperties.containsKey(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy")) {
 			deploymentProperties.put(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".restartPolicy", RestartPolicy.Never.name());
+		}
+		if(deploymentProperties.containsKey("spring.cloud.deployer.cron.expression")) {
+			deploymentProperties.put(KubernetesDeployerProperties.KUBERNETES_DEPLOYER_PROPERTIES_PREFIX + ".cron.expression", deploymentProperties.get("spring.cloud.deployer.cron.expression"));
 		}
 		Map<String, String> updatedDeploymentProperties = new HashMap<>();
 		Map<String, String> updatedSchedulerProperties = new HashMap<>();
@@ -201,10 +202,10 @@ public class KubernetesScheduler extends AbstractKubernetesDeployer implements S
 
 		Map<String, String> schedulerProperties = mergeSchedulerProperties(scheduleRequest);
 
-		String schedule = schedulerProperties.get("spring.cloud.scheduler.kubernetes.cron.expression") != null ?
-				schedulerProperties.get("spring.cloud.scheduler.kubernetes.cron.expression") :
+		String schedule = schedulerProperties.get("spring.cloud.deployer.kubernetes.cron.expression") != null ?
+				schedulerProperties.get("spring.cloud.deployer.kubernetes.cron.expression") :
 				schedulerProperties.get(SchedulerPropertyKeys.CRON_EXPRESSION);
-		Assert.hasText(schedule, "The property: " + SchedulerPropertyKeys.CRON_EXPRESSION + " must be defined");
+		Assert.hasText(schedule, "The property spring.cloud.deployer.cron.expression must be defined");
 
 		PodSpec podSpec = createPodSpec(new ScheduleRequest(scheduleRequest.getDefinition(),schedulerProperties, scheduleRequest.getCommandlineArguments(), scheduleRequest.getScheduleName(),scheduleRequest.getResource()));
 		String taskServiceAccountName = this.deploymentPropertiesResolver.getTaskServiceAccountName(schedulerProperties);
